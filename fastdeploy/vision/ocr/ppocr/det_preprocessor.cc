@@ -20,6 +20,60 @@ namespace fastdeploy {
 namespace vision {
 namespace ocr {
 
+std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
+                                 int short_min = 640, int base = 32) {
+  int dst_height;
+  int dst_width;
+  int cur_long;
+  int cur_short;
+  bool swap;
+
+  if (src_height > src_width) {
+    cur_long = src_height;
+    cur_short = src_width;
+    swap = false;
+  } else {
+    cur_long = src_width;
+    cur_short = src_height;
+    swap = true;
+  }
+
+  if (cur_long > long_min && cur_short > short_min) {
+    dst_height = swap ? cur_short : cur_long;
+    dst_width = swap ? cur_long : cur_short;
+  } else if (cur_long > long_min && cur_short < short_min) {
+    float ratio = (float)short_min / (float)cur_short;
+    int new_long = std::ceil(ratio * (float)cur_long);
+    dst_height = swap ? short_min : new_long;
+    dst_width = swap ? new_long : short_min;
+  } else if (cur_long < long_min && cur_short > short_min) {
+    float ratio = (float)long_min / (float)(cur_long);
+    int new_short = std::ceil(ratio * (float)cur_short);
+    dst_height = swap ? new_short : long_min;
+    dst_width = swap ? long_min : new_short;
+  } else {
+    float src_ratio = (float)cur_long / (float)cur_short;
+    float base_ratio = (float)long_min / (float)short_min;
+    if (src_ratio > base_ratio) {
+      float ratio = (float)short_min / (float)cur_short;
+      int new_long = std::ceil(ratio * (float)cur_long);
+      dst_height = swap ? short_min : new_long;
+      dst_width = swap ? new_long : short_min;
+    } else {
+      float ratio = (float)long_min / (float)cur_long;
+      int new_short = std::ceil(ratio * (float)cur_short);
+      dst_height = swap ? long_min : new_short;
+      dst_width = swap ? new_short : long_min;
+    }
+  }
+
+  dst_height = (dst_height + base - 1) / base * base;
+  dst_width = (dst_width + base - 1) / base * base;
+  dst_height = std::max(dst_height, base);
+  dst_width = std::max(dst_width, base);
+  return std::make_pair(dst_height, dst_width);
+}
+
 std::array<int, 4> DBDetectorPreprocessor::OcrDetectorGetInfo(
     FDMat* img, int max_size_len) {
   int w = img->Width();
@@ -47,6 +101,19 @@ std::array<int, 4> DBDetectorPreprocessor::OcrDetectorGetInfo(
    *ratio_h = float(resize_h) / float(h);
    *ratio_w = float(resize_w) / float(w);
    */
+}
+
+std::array<int, 4> DBDetectorPreprocessor::OcrDetectorGetInfo(FDMat* img) {
+  int w = img->Width();
+  int h = img->Height();
+  if (static_shape_infer_) {
+    return {w, h, det_image_shape_[2], det_image_shape_[1]};
+  }
+  std::pair<int, int> dst_size =
+      cal_dst_size(h, w, longside_size_, shortside_size_);
+  std::cout << w << " * " << h << " -> " << dst_size.second << " * "
+            << dst_size.first << std::endl;
+  return {w, h, dst_size.second, dst_size.first};
 }
 
 DBDetectorPreprocessor::DBDetectorPreprocessor() {
@@ -79,7 +146,8 @@ bool DBDetectorPreprocessor::Apply(FDMatBatch* image_batch,
   batch_det_img_info_.resize(image_batch->mats->size());
   for (size_t i = 0; i < image_batch->mats->size(); ++i) {
     FDMat* mat = &(image_batch->mats->at(i));
-    batch_det_img_info_[i] = OcrDetectorGetInfo(mat, max_side_len_);
+    // batch_det_img_info_[i] = OcrDetectorGetInfo(mat, max_side_len_);
+    batch_det_img_info_[i] = OcrDetectorGetInfo(mat);
     max_resize_w = std::max(max_resize_w, batch_det_img_info_[i][2]);
     max_resize_h = std::max(max_resize_h, batch_det_img_info_[i][3]);
   }

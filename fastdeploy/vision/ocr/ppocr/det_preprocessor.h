@@ -40,6 +40,12 @@ class FASTDEPLOY_DECL DBDetectorPreprocessor : public ProcessorManager {
   /// Set max_side_len for the detection preprocess, default is 960
   void SetMaxSideLen(int max_side_len) { max_side_len_ = max_side_len; }
 
+  /// Set longside_size and shortside_size
+  void SetLongAndShortSize(int longside_size, int shortside_size) {
+    longside_size_ = longside_size;
+    shortside_size_ = shortside_size;
+  }
+
   /// Get max_side_len of the detection preprocess
   int GetMaxSideLen() const { return max_side_len_; }
 
@@ -97,6 +103,11 @@ class FASTDEPLOY_DECL DBDetectorPreprocessor : public ProcessorManager {
   std::vector<int> det_image_shape_ = {3, 960, 960};
   bool static_shape_infer_ = false;
   std::array<int, 4> OcrDetectorGetInfo(FDMat* img, int max_size_len);
+
+  // triplemu: support ocr preprocess with longsize & shortsize limit
+  std::array<int, 4> OcrDetectorGetInfo(FDMat* img);
+  int longside_size_ = 960;
+  int shortside_size_ = 640;
 };
 
 }  // namespace ocr
