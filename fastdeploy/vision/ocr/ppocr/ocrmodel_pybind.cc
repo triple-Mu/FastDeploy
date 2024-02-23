@@ -36,6 +36,11 @@ void BindPPOCRModel(pybind11::module& m) {
            [](vision::ocr::DBDetectorPreprocessor& self,
               const std::vector<float>& mean, const std::vector<float>& std,
               bool is_scale) { self.SetNormalize(mean, std, is_scale); })
+      .def("set_long_and_short_size",
+           [](vision::ocr::DBDetectorPreprocessor& self, int long_side_size,
+              int short_side_size) {
+             self.SetLongAndShortSize(long_side_size, short_side_size);
+           })
       .def("run",
            [](vision::ocr::DBDetectorPreprocessor& self,
               std::vector<pybind11::array>& im_list) {
