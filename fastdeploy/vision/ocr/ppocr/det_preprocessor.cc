@@ -44,8 +44,8 @@ std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
   }
 
   if (cur_long > long_min && cur_short > short_min) {
-    dst_height = swap ? cur_short: cur_long;
-    dst_width = swap ? cur_long: cur_short;
+    dst_height = swap ? cur_short : cur_long;
+    dst_width = swap ? cur_long : cur_short;
     dst_height = (dst_height + base - 1) / base * base;
     dst_width = (dst_width + base - 1) / base * base;
     dst_height = std::max(dst_height, base);
