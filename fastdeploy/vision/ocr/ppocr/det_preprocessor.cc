@@ -21,7 +21,10 @@ namespace vision {
 namespace ocr {
 
 std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
-                                 int short_min = 640, int base = 32) {
+                                 int short_min, int base = 32) {
+  float base_ratio = (float)long_min / (float)short_min;
+
+  float cur_ratio;
   int dst_height;
   int dst_width;
   int cur_long;
@@ -31,42 +34,35 @@ std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
   if (src_height > src_width) {
     cur_long = src_height;
     cur_short = src_width;
+    cur_ratio = (float)cur_long / (float)cur_short;
     swap = false;
   } else {
     cur_long = src_width;
     cur_short = src_height;
+    cur_ratio = (float)cur_long / (float)cur_short;
     swap = true;
   }
 
   if (cur_long > long_min && cur_short > short_min) {
-    dst_height = swap ? cur_short : cur_long;
-    dst_width = swap ? cur_long : cur_short;
-  } else if (cur_long > long_min && cur_short < short_min) {
+    dst_height = swap ? cur_short: cur_long;
+    dst_width = swap ? cur_long: cur_short;
+    dst_height = (dst_height + base - 1) / base * base;
+    dst_width = (dst_width + base - 1) / base * base;
+    dst_height = std::max(dst_height, base);
+    dst_width = std::max(dst_width, base);
+    return std::make_pair(dst_height, dst_width);
+  }
+  if (cur_ratio > base_ratio) {
     float ratio = (float)short_min / (float)cur_short;
     int new_long = std::ceil(ratio * (float)cur_long);
     dst_height = swap ? short_min : new_long;
     dst_width = swap ? new_long : short_min;
-  } else if (cur_long < long_min && cur_short > short_min) {
-    float ratio = (float)long_min / (float)(cur_long);
+  } else {
+    float ratio = (float)long_min / (float)cur_long;
     int new_short = std::ceil(ratio * (float)cur_short);
     dst_height = swap ? new_short : long_min;
     dst_width = swap ? long_min : new_short;
-  } else {
-    float src_ratio = (float)cur_long / (float)cur_short;
-    float base_ratio = (float)long_min / (float)short_min;
-    if (src_ratio > base_ratio) {
-      float ratio = (float)short_min / (float)cur_short;
-      int new_long = std::ceil(ratio * (float)cur_long);
-      dst_height = swap ? short_min : new_long;
-      dst_width = swap ? new_long : short_min;
-    } else {
-      float ratio = (float)long_min / (float)cur_long;
-      int new_short = std::ceil(ratio * (float)cur_short);
-      dst_height = swap ? long_min : new_short;
-      dst_width = swap ? new_short : long_min;
-    }
   }
-
   dst_height = (dst_height + base - 1) / base * base;
   dst_width = (dst_width + base - 1) / base * base;
   dst_height = std::max(dst_height, base);
