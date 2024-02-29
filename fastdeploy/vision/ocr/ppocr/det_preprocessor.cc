@@ -107,8 +107,8 @@ std::array<int, 4> DBDetectorPreprocessor::OcrDetectorGetInfo(FDMat* img) {
   }
   std::pair<int, int> dst_size =
       cal_dst_size(h, w, longside_size_, shortside_size_);
-  std::cout << w << " * " << h << " -> " << dst_size.second << " * "
-            << dst_size.first << std::endl;
+  // std::cout << w << " * " << h << " -> " << dst_size.second << " * "
+  //           << dst_size.first << std::endl;
   return {w, h, dst_size.second, dst_size.first};
 }
 
