@@ -20,6 +20,27 @@ namespace fastdeploy {
 namespace vision {
 namespace ocr {
 
+constexpr int MAX_SIZE = 2048;
+
+std::pair<int, int> limit_max_size(int height, int width) {
+  int max_size = std::max(height, width);
+  float h_div_w = (float)height / (float)width;
+  if (max_size > MAX_SIZE) {
+    int new_height;
+    int new_width;
+    if (height > width) {
+      new_height = MAX_SIZE;
+      new_width = std::ceil((float)new_height / h_div_w);
+    } else {
+      new_width = MAX_SIZE;
+      new_height = std::ceil((float)new_width * h_div_w);
+    }
+    return std::make_pair(new_height, new_width);
+  } else {
+    return std::make_pair(height, width);
+  }
+}
+
 std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
                                  int short_min, int base = 32) {
   float base_ratio = (float)long_min / (float)short_min;
@@ -46,6 +67,9 @@ std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
   if (cur_long > long_min && cur_short > short_min) {
     dst_height = swap ? cur_short : cur_long;
     dst_width = swap ? cur_long : cur_short;
+    auto limit_shape = limit_max_size(dst_height, dst_width);
+    dst_height = limit_shape.first;
+    dst_width = limit_shape.second;
     dst_height = (dst_height + base - 1) / base * base;
     dst_width = (dst_width + base - 1) / base * base;
     dst_height = std::max(dst_height, base);
@@ -63,6 +87,9 @@ std::pair<int, int> cal_dst_size(int src_height, int src_width, int long_min,
     dst_height = swap ? new_short : long_min;
     dst_width = swap ? long_min : new_short;
   }
+  auto limit_shape = limit_max_size(dst_height, dst_width);
+  dst_height = limit_shape.first;
+  dst_width = limit_shape.second;
   dst_height = (dst_height + base - 1) / base * base;
   dst_width = (dst_width + base - 1) / base * base;
   dst_height = std::max(dst_height, base);
