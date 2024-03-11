@@ -65,6 +65,7 @@ if(PADDLEINFERENCE_DIRECTORY)
     execute_process(COMMAND cp -r ${PADDLEINFERENCE_DIRECTORY} ${THIRD_PARTY_PATH}/install/paddle_inference)
     execute_process(COMMAND rm -rf ${THIRD_PARTY_PATH}/install/paddle_inference/paddle/lib/*.a)
   endif()
+  set(PADDLEINFERENCE_VERSION "2.6.0.post120")
 else()
 
   # Custom Paddle Inference URL
