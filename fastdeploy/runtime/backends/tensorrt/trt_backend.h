@@ -102,6 +102,7 @@ class TrtBackend : public BaseBackend {
                     const TrtBackendOption& option = TrtBackendOption());
 
   TrtBackendOption option_;
+  std::shared_ptr<nvinfer1::IRuntime> runtime_;
   std::shared_ptr<nvinfer1::ICudaEngine> engine_;
   std::shared_ptr<nvinfer1::IExecutionContext> context_;
   FDUniquePtr<nvonnxparser::IParser> parser_;

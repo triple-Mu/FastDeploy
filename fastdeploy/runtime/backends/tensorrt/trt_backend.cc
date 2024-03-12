@@ -574,6 +574,7 @@ bool TrtBackend::BuildTrtEngine() {
   if (context_) {
     context_.reset();
     engine_.reset();
+    runtime_.reset();
   }
   if (option_.max_batch_size >= 1) {
     builder_->setMaxBatchSize(option_.max_batch_size);
@@ -637,15 +638,15 @@ bool TrtBackend::BuildTrtEngine() {
     return false;
   }
 
-  FDUniquePtr<nvinfer1::IRuntime> runtime{
-      nvinfer1::createInferRuntime(*FDTrtLogger::Get())};
-  if (!runtime) {
+  runtime_ = std::shared_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(*FDTrtLogger::Get()),
+                                                 FDInferDeleter());
+  if (!runtime_) {
     FDERROR << "Failed to call createInferRuntime()." << std::endl;
     return false;
   }
 
   engine_ = std::shared_ptr<nvinfer1::ICudaEngine>(
-      runtime->deserializeCudaEngine(plan->data(), plan->size()),
+      runtime_->deserializeCudaEngine(plan->data(), plan->size()),
       FDInferDeleter());
   if (!engine_) {
     FDERROR << "Failed to call deserializeCudaEngine()." << std::endl;
