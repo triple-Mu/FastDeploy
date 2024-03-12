@@ -313,7 +313,7 @@ class build_py(setuptools.command.build_py.build_py):
 
         for src in generated_python_files:
             dst = os.path.join(TOP_DIR, os.path.relpath(src, CMAKE_BUILD_DIR))
-            self.copy_file(src, dst, link='sym')
+            self.copy_file(src, dst)
 
         return setuptools.command.build_py.build_py.run(self)
 
@@ -345,7 +345,7 @@ class build_ext(setuptools.command.build_ext.build_ext):
             src = os.path.join(lib_path, filename)
             dst = os.path.join(
                 os.path.realpath(self.build_lib), PACKAGE_NAME, filename)
-            self.copy_file(src, dst, link='sym')
+            self.copy_file(src, dst)
 
 
 class mypy_type_check(ONNXCommand):
