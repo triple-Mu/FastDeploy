@@ -25,8 +25,19 @@ option(PADDLEINFERENCE_DIRECTORY "Directory of custom Paddle Inference library" 
 option(PADDLEINFERENCE_API_CUSTOM_OP "Whether building with custom paddle ops" OFF)
 option(PADDLEINFERENCE_API_COMPAT_2_4_x "Whether using Paddle Inference 2.4.x" OFF)
 option(PADDLEINFERENCE_API_COMPAT_2_5_x "Whether using Paddle Inference 2.5.x" OFF)
+option(PADDLEINFERENCE_API_COMPAT_2_6_x "Whether using Paddle Inference 2.6.x" OFF)
 option(PADDLEINFERENCE_API_COMPAT_DEV "Whether using Paddle Inference latest dev" OFF)
 option(PADDLEINFERENCE_API_COMPAT_CUDA_SM_80 "Whether using Paddle Inference with CUDA sm_80(A100)" OFF)
+option(PADDLEINFERENCE_API_COMPAT_CUDA_SM_90 "Whether using Paddle Inference with CUDA sm_90(H100)" OFF)
+
+if(WITH_GPU AND (PADDLEINFERENCE_API_COMPAT_CUDA_SM_80 OR PADDLEINFERENCE_API_COMPAT_CUDA_SM_90))
+  set(TRIPLEMU_PATCH ON)
+else()
+  set(TRIPLEMU_PATCH OFF)
+endif()
+
+# cu118 https://paddle-inference-lib.bj.bcebos.com/2.6.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda11.8_cudnn8.6.0-trt8.5.1.7/paddle_inference.tgz
+# cu120 https://paddle-inference-lib.bj.bcebos.com/2.6.2/cxx_c/Linux/GPU/x86-64_gcc12.2_avx_mkl_cuda12.0_cudnn8.9.1-trt8.6.1.6/paddle_inference.tgz
 
 set(PADDLEINFERENCE_PROJECT "extern_paddle_inference")
 set(PADDLEINFERENCE_PREFIX_DIR ${THIRD_PARTY_PATH}/paddle_inference)
@@ -98,15 +109,18 @@ else()
         # x86_64
         if(WITH_GPU)
           if(PADDLEINFERENCE_API_COMPAT_CUDA_SM_80)
-            set(PADDLEINFERENCE_FILE "paddle_inference-linux-x64-gpu-trt8.5.2.2-mkl-sm70.sm75.sm80.sm86.nodist-2.5.0.558ae9cd11.tgz")
-            set(PADDLEINFERENCE_VERSION "2.5.0.558ae9cd11")
+            set(PADDLEINFERENCE_FILE "https://paddle-inference-lib.bj.bcebos.com/2.6.2/cxx_c/Linux/GPU/x86-64_gcc8.2_avx_mkl_cuda11.8_cudnn8.6.0-trt8.5.1.7/paddle_inference.tgz")
+            set(PADDLEINFERENCE_VERSION "2.6.2")
+          elseif(PADDLEINFERENCE_API_COMPAT_CUDA_SM_90)
+            set(PADDLEINFERENCE_FILE "https://paddle-inference-lib.bj.bcebos.com/2.6.2/cxx_c/Linux/GPU/x86-64_gcc12.2_avx_mkl_cuda12.0_cudnn8.9.1-trt8.6.1.6/paddle_inference.tgz")
+            set(PADDLEINFERENCE_VERSION "2.6.2")
           else()
             set(PADDLEINFERENCE_FILE "paddle_inference-linux-x64-gpu-trt8.5.2.2-mkl-sm61.sm70.sm75.sm86.nodist-2.5.0.558ae9cd11.tgz")
             set(PADDLEINFERENCE_VERSION "2.5.0.558ae9cd11")
           endif()
         else()
-          set(PADDLEINFERENCE_FILE "paddle_inference-linux-x64-mkl-2.5.0.558ae9cd11.tgz")
-          set(PADDLEINFERENCE_VERSION "2.5.0.558ae9cd11")
+          set(PADDLEINFERENCE_FILE "https://paddle-inference-lib.bj.bcebos.com/2.6.2/cxx_c/Linux/CPU/gcc8.2_avx_mkl/paddle_inference.tgz")
+          set(PADDLEINFERENCE_VERSION "2.6.2")
         endif()
         if(WITH_IPU)
           set(PADDLEINFERENCE_FILE "paddle_inference-linux-x64-ipu-2.4-dev1.tgz")
@@ -127,7 +141,12 @@ else()
         endif()
       endif()
     endif()
-    set(PADDLEINFERENCE_URL "${PADDLEINFERENCE_URL_BASE}${PADDLEINFERENCE_FILE}")
+
+    if(TRIPLEMU_PATCH)
+      set(PADDLEINFERENCE_URL "${PADDLEINFERENCE_FILE}")
+    else()
+      set(PADDLEINFERENCE_URL "${PADDLEINFERENCE_URL_BASE}${PADDLEINFERENCE_FILE}")
+    endif()
 
   endif(PADDLEINFERENCE_URL)
   
@@ -169,10 +188,15 @@ else()
   set(PADDLEINFERENCE_COMPILE_LIB
       "${PADDLEINFERENCE_INSTALL_DIR}/paddle/lib/libpaddle_inference.so"
       CACHE FILEPATH "paddle_inference compile library." FORCE)
-  set(DNNL_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/mkldnn/lib/libdnnl.so.2")
-  set(OMP_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/mklml/lib/libiomp5.so")
-  set(P2O_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/paddle2onnx/lib/libpaddle2onnx.so")
-  set(ORT_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/onnxruntime/lib/libonnxruntime.so")
+  if(TRIPLEMU_PATCH)
+    set(DNNL_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/mkldnn/lib/libdnnl.so.3")
+    set(OMP_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/mklml/lib/libiomp5.so")
+  else()
+    set(DNNL_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/mkldnn/lib/libdnnl.so.2")
+    set(OMP_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/mklml/lib/libiomp5.so")
+    set(P2O_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/paddle2onnx/lib/libpaddle2onnx.so")
+    set(ORT_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/onnxruntime/lib/libonnxruntime.so")
+  endif()
   # Check whether the encrypt and auth tools exists. only support PADDLEINFERENCE_DIRECTORY now.
   if(PADDLEINFERENCE_DIRECTORY)
     set(FDMODEL_LIB "${PADDLEINFERENCE_INSTALL_DIR}/third_party/install/fdmodel/lib/libfastdeploy_wenxin.so")
@@ -209,16 +233,17 @@ set_property(TARGET external_paddle_inference PROPERTY IMPORTED_LOCATION
                                          ${PADDLEINFERENCE_COMPILE_LIB})
 add_dependencies(external_paddle_inference ${PADDLEINFERENCE_PROJECT})
 
+if(NOT TRIPLE_PATCH)
+  add_library(external_p2o STATIC IMPORTED GLOBAL)
+  set_property(TARGET external_p2o PROPERTY IMPORTED_LOCATION
+          ${P2O_LIB})
+  add_dependencies(external_p2o ${PADDLEINFERENCE_PROJECT})
 
-add_library(external_p2o STATIC IMPORTED GLOBAL)
-set_property(TARGET external_p2o PROPERTY IMPORTED_LOCATION
-        ${P2O_LIB})
-add_dependencies(external_p2o ${PADDLEINFERENCE_PROJECT})
-
-add_library(external_ort STATIC IMPORTED GLOBAL)
-set_property(TARGET external_ort PROPERTY IMPORTED_LOCATION
-        ${ORT_LIB})
-add_dependencies(external_ort ${PADDLEINFERENCE_PROJECT})
+  add_library(external_ort STATIC IMPORTED GLOBAL)
+  set_property(TARGET external_ort PROPERTY IMPORTED_LOCATION
+          ${ORT_LIB})
+  add_dependencies(external_ort ${PADDLEINFERENCE_PROJECT})
+endif()
 
 add_library(external_dnnl STATIC IMPORTED GLOBAL)
 set_property(TARGET external_dnnl PROPERTY IMPORTED_LOCATION
@@ -267,22 +292,31 @@ function(set_paddle_encrypt_auth_compatible_policy LIBRARY_NAME)
   endif()
 endfunction()
 
-# Compatible policy for 2.4.x/2.5.x and latest dev.
+# Compatible policy for 2.4.x/2.5.x/2.6.x and latest dev.
 if (NOT WITH_KUNLUNXIN)
   string(REGEX MATCH "0.0.0" PADDLEINFERENCE_USE_DEV ${PADDLEINFERENCE_VERSION})
+  message(WARNING "REGEX MATCH: PADDLEINFERENCE_USE_DEV=${PADDLEINFERENCE_USE_DEV}")
   string(REGEX MATCH "2.4|post24|post2.4" PADDLEINFERENCE_USE_2_4_x ${PADDLEINFERENCE_VERSION})
+  message(WARNING "REGEX MATCH: PADDLEINFERENCE_USE_2_4_x=${PADDLEINFERENCE_USE_2_4_x}")
   string(REGEX MATCH "2.5|post25|post2.5" PADDLEINFERENCE_USE_2_5_x ${PADDLEINFERENCE_VERSION})
+  message(WARNING "REGEX MATCH: PADDLEINFERENCE_USE_2_5_x=${PADDLEINFERENCE_USE_2_5_x}")
+  string(REGEX MATCH "2.6|post26|post2.6" PADDLEINFERENCE_USE_2_6_x ${PADDLEINFERENCE_VERSION})
+  message(WARNING "REGEX MATCH: PADDLEINFERENCE_USE_2_6_x=${PADDLEINFERENCE_USE_2_6_x}")
 endif()
   
 if(PADDLEINFERENCE_USE_DEV)
   set(PADDLEINFERENCE_API_COMPAT_DEV ON CACHE BOOL "" FORCE)
 endif()
 
+if(PADDLEINFERENCE_USE_2_6_x)
+  set(PADDLEINFERENCE_API_COMPAT_2_6_x ON CACHE BOOL "" FORCE)
+endif()
+
 if(PADDLEINFERENCE_USE_2_5_x)
   set(PADDLEINFERENCE_API_COMPAT_2_5_x ON CACHE BOOL "" FORCE)
 endif()
 
-if(PADDLEINFERENCE_USE_2_4_x AND (NOT PADDLEINFERENCE_API_COMPAT_2_5_x) AND (NOT PADDLEINFERENCE_API_COMPAT_DEV))
+if(PADDLEINFERENCE_USE_2_4_x AND (NOT PADDLEINFERENCE_API_COMPAT_2_5_x) AND (NOT PADDLEINFERENCE_API_COMPAT_2_6_x) AND (NOT PADDLEINFERENCE_API_COMPAT_DEV))
   set(PADDLEINFERENCE_API_COMPAT_2_4_x ON CACHE BOOL "" FORCE)
   message(WARNING "You are using PADDLEINFERENCE_USE_2_4_x:${PADDLEINFERENCE_VERSION}, force PADDLEINFERENCE_API_COMPAT_2_4_x=ON")
 endif()
@@ -295,6 +329,10 @@ if(PADDLEINFERENCE_API_COMPAT_2_5_x)
   add_definitions(-DPADDLEINFERENCE_API_COMPAT_2_5_x)
 endif()
 
+if(PADDLEINFERENCE_API_COMPAT_2_6_x)
+  add_definitions(-DPADDLEINFERENCE_API_COMPAT_2_6_x)
+endif()
+
 if(PADDLEINFERENCE_API_COMPAT_DEV)
   add_definitions(-DPADDLEINFERENCE_API_COMPAT_DEV)
 endif()
@@ -305,17 +343,27 @@ if(PADDLEINFERENCE_API_COMPAT_2_5_x AND (NOT WITH_KUNLUNXIN))
   # TODO: support custom ops for latest dev
   set(PADDLEINFERENCE_API_CUSTOM_OP ON CACHE BOOL "" FORCE)
   # add paddle_inference/paddle/include path for custom ops
-  # the extension.h and it's deps headers are located in 
+  # the extension.h and it's deps headers are located in
   # paddle/include/paddle directory.
   include_directories(${PADDLEINFERENCE_INC_DIR}/paddle/include)
   message(WARNING "You are using PADDLEINFERENCE_API_COMPAT_2_5_x:${PADDLEINFERENCE_VERSION}, force PADDLEINFERENCE_API_CUSTOM_OP=${PADDLEINFERENCE_API_CUSTOM_OP}")
+elseif(PADDLEINFERENCE_API_COMPAT_2_6_x AND (NOT WITH_KUNLUNXIN))
+  # no c++ standard policy conflicts vs c++ 11
+  # TODO: support custom ops for latest dev
+  set(PADDLEINFERENCE_API_CUSTOM_OP ON CACHE BOOL "" FORCE)
+  # add paddle_inference/paddle/include path for custom ops
+  # the extension.h and it's deps headers are located in
+  # paddle/include/paddle directory.
+  include_directories(${PADDLEINFERENCE_INC_DIR}/paddle/include)
+  message(WARNING "You are using PADDLEINFERENCE_API_COMPAT_2_6_x:${PADDLEINFERENCE_VERSION}, force PADDLEINFERENCE_API_CUSTOM_OP=${PADDLEINFERENCE_API_CUSTOM_OP}")
 endif()
+
 
 function(set_paddle_custom_ops_compatible_policy)
   if(PADDLEINFERENCE_API_CUSTOM_OP AND (NOT WITH_KUNLUNXIN))
     if(NOT MSVC)
       # TODO: add non c++ 14 policy for latest dev
-      if(NOT PADDLEINFERENCE_API_COMPAT_2_5_x)
+      if(NOT PADDLEINFERENCE_API_COMPAT_2_5_x AND NOT PADDLEINFERENCE_API_COMPAT_2_6_x)
         # gcc c++ 14 policy for 2.4.x
         if(NOT DEFINED CMAKE_CXX_STANDARD)
           set(CMAKE_CXX_STANDARD 14 PARENT_SCOPE)
@@ -327,7 +375,7 @@ function(set_paddle_custom_ops_compatible_policy)
       endif()
       if(WITH_GPU)
         # cuda c++ 14 policy for 2.4.x
-        if(NOT PADDLEINFERENCE_API_COMPAT_2_5_x)
+        if(NOT PADDLEINFERENCE_API_COMPAT_2_5_x AND NOT PADDLEINFERENCE_API_COMPAT_2_6_x)
           if(NOT DEFINED CMAKE_CUDA_STANDARD)
             set(CMAKE_CUDA_STANDARD 14 PARENT_SCOPE)
             message(WARNING "Found PADDLEINFERENCE_API_CUSTOM_OP=ON and WITH_GPU=ON, but CMAKE_CUDA_STANDARD is not defined, use c++ 14 by default!")

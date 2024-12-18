@@ -18,6 +18,8 @@
 #include "paddle/include/experimental/ext_all.h"
 #elif defined(PADDLEINFERENCE_API_COMPAT_2_5_x)
 #include "paddle/include/paddle/extension.h"
+#elif defined(PADDLEINFERENCE_API_COMPAT_2_6_x)
+#include "paddle/include/paddle/extension.h"
 #else
 #include "paddle/extension.h"
 #endif

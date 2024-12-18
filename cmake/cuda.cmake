@@ -11,9 +11,10 @@ if(BUILD_ON_JETSON)
   set(fd_known_gpu_archs10 "53 62 72")
 else()
   message("Using New Release Strategy - All Arches Packge")
-  set(fd_known_gpu_archs "35 50 52 60 61 70 75 80 86")
-  set(fd_known_gpu_archs10 "35 50 52 60 61 70 75")
-  set(fd_known_gpu_archs11 "50 60 61 70 75 80")
+  set(fd_known_gpu_archs "50 52 60 61 70 75 80 86 89 90")
+  set(fd_known_gpu_archs10 "50 52 60 61 70 75")
+  set(fd_known_gpu_archs11 "50 60 61 70 75 80 86")
+  set(fd_known_gpu_archs12 "50 60 61 70 75 80 86 89 90")
 endif()
 
 ######################################################################################
@@ -90,6 +91,7 @@ function(select_nvcc_arch_flags out_variable)
       "Volta"
       "Turing"
       "Ampere"
+      "Hopper"
       "All"
       "Manual")
   set(archs_name_default "All")
@@ -153,9 +155,11 @@ function(select_nvcc_arch_flags out_variable)
   elseif(${CUDA_ARCH_NAME} STREQUAL "Ampere")
     if(${CMAKE_CUDA_COMPILER_VERSION} LESS 11.1) # CUDA 11.0
       set(cuda_arch_bin "80")
-    elseif(${CMAKE_CUDA_COMPILER_VERSION} LESS 12.0) # CUDA 11.1+
+    elseif(${CMAKE_CUDA_COMPILER_VERSION} GREATER_EQUAL 11.1) # CUDA 11.1+
       set(cuda_arch_bin "80 86")
     endif()
+  elseif(${CUDA_ARCH_NAME} STREQUAL "Hopper")
+    set(cuda_arch_bin "89 90")
   elseif(${CUDA_ARCH_NAME} STREQUAL "All")
     set(cuda_arch_bin ${fd_known_gpu_archs})
   elseif(${CUDA_ARCH_NAME} STREQUAL "Auto")
@@ -232,6 +236,11 @@ elseif(${CMAKE_CUDA_COMPILER_VERSION} LESS 11.2) # CUDA 11.0/11.1
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-deprecated-gpu-targets")
 elseif(${CMAKE_CUDA_COMPILER_VERSION} LESS 12.0) # CUDA 11.2+
   set(fd_known_gpu_archs "${fd_known_gpu_archs11} 86")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -D_MWAITXINTRIN_H_INCLUDED")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -D__STRICT_ANSI__")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-deprecated-gpu-targets")
+elseif(${CMAKE_CUDA_COMPILER_VERSION} GREATER_EQUAL 12.0) # CUDA 12.0+
+  set(fd_known_gpu_archs ${fd_known_gpu_archs12})
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -D_MWAITXINTRIN_H_INCLUDED")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -D__STRICT_ANSI__")
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Wno-deprecated-gpu-targets")
